@@ -46,25 +46,6 @@ def main(page: ft.Page):
         tooltip="Panic Button",
     )
 
-    # Video Dialog (corregido)
-    def make_video_dialog():
-        dlg = ft.AlertDialog(
-            content=ft.Container(
-                content=ft.Video(
-                    src="taylor_wink.mp4",   # ← Corregido
-                    autoplay=True,
-                    expand=True,
-                    show_controls=False,
-                ),
-                width=300,
-                height=300,
-                border_radius=10,
-                clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            ),
-            title=ft.Text("Task Completed! ✨", text_align="center"),
-        )
-        return dlg
-
     # Lyrics Mood
     def get_lyrics_mood(days_left):
         if days_left > 7:
@@ -136,10 +117,7 @@ def main(page: ft.Page):
         new_task_ref = [None]
 
         def mark_as_done(e):
-            video_dialog = make_video_dialog()
-            page.dialog = video_dialog
-            video_dialog.open = True
-
+            # Solo quitamos la tarea (sin video)
             if new_task_ref[0] in task_list.controls:
                 task_list.controls.remove(new_task_ref[0])
 
@@ -176,13 +154,17 @@ def main(page: ft.Page):
         update_chart()
         page.update()
 
-    # UI Elements
+    # ------------------ INTERFAZ ------------------
     header = ft.Text("My Academic Eras", size=32, weight="bold", italic=True, color="#C0C0C0")
 
     task_name = ft.TextField(label="Assignment Name", border_color="grey")
     era_dropdown = ft.Dropdown(
         label="Select Era (Difficulty)",
-        options=[ft.dropdown.Option("Lover"), ft.dropdown.Option("Red"), ft.dropdown.Option("Reputation")],
+        options=[
+            ft.dropdown.Option("Lover"),
+            ft.dropdown.Option("Red"),
+            ft.dropdown.Option("Reputation")
+        ],
         value="Lover",
         border_color="grey",
     )
@@ -196,11 +178,17 @@ def main(page: ft.Page):
     page.overlay.append(date_picker)
 
     date_btn = ft.ElevatedButton(
-        "Pick Deadline", icon=ft.icons.CALENDAR_MONTH,
+        "Pick Deadline", 
+        icon=ft.icons.CALENDAR_MONTH,
         on_click=lambda e: date_picker.pick_date()
     )
 
-    add_btn = ft.ElevatedButton("Add Assignment", bgcolor="#C0C0C0", color="black", on_click=add_task)
+    add_btn = ft.ElevatedButton(
+        "Add Assignment", 
+        bgcolor="#C0C0C0", 
+        color="black", 
+        on_click=add_task
+    )
 
     # Render
     update_chart()
@@ -222,7 +210,7 @@ def main(page: ft.Page):
 
 # ====================== ERROR HANDLER ======================
 def global_error_handler(e):
-    error_text = f"Error:\n{str(e)}\n\n{traceback.format_exc(limit=12)}"
+    error_text = f"Error:\n{str(e)}\n\n{traceback.format_exc(limit=15)}"
     
     error_page = ft.Page()
     error_page.title = "Error"
@@ -240,6 +228,7 @@ def global_error_handler(e):
                 bgcolor=ft.Colors.BLACK26,
                 padding=15,
                 border_radius=10,
+                width=380,
             ),
             ft.ElevatedButton("Cerrar", bgcolor=ft.Colors.WHITE, color=ft.Colors.RED_900,
                               on_click=lambda _: sys.exit(0))
