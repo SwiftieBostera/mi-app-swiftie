@@ -1,42 +1,33 @@
-name: Build Android APK
-on: [push]
+name: Build Flet APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Esto le da permiso de crear el archivo de descarga
+
     steps:
-      - uses: actions/checkout@v4 # Versión actualizada
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5 # Versión actualizada
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
-      - name: Install Flet and Dependencies
+      - name: Install dependencies
         run: |
+          pip install --upgrade pip
           pip install flet
-          # Esto instala herramientas necesarias para compilar en Linux
-          sudo apt-get update
-          sudo apt-get install -y dep-tooling 
-
-      - name: Setup Java
-        uses: actions/setup-java@v4 # Versión actualizada
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
 
       - name: Build APK
-        run: flet build apk
+        run: flet build apk --verbose
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: swiftie-app-apk
-          path: build/flutter/outputs/flutter-apk/app-release.apk
+          name: app-apk
+          path: build/apk/*.apk
