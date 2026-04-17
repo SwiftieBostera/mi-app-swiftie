@@ -5,7 +5,6 @@ import traceback
 import sys
 
 def main(page: ft.Page):
-    # Configuración principal de la página
     page.title = "The Tortured Poets Department: Academic Edition"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 30
@@ -29,8 +28,7 @@ def main(page: ft.Page):
         "I'm doing good, I'm on some new shit.",
     ]
 
-    # ------------------ COMPONENTES UI ------------------
-    # 1. Panic Button
+    # Panic Button
     def panic_action(e):
         lyric = random.choice(panic_lyrics)
         page.snack_bar = ft.SnackBar(
@@ -41,22 +39,22 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    panic_btn = ft.FloatingActionButton(
+    page.floating_action_button = ft.FloatingActionButton(
         icon=ft.icons.WARNING_AMBER_ROUNDED,
         bgcolor="#8B0000",
         on_click=panic_action,
         tooltip="Panic Button",
     )
-    page.floating_action_button = panic_btn
 
-    # 2. Video Celebration Dialog
+    # Video Dialog (corregido)
     def make_video_dialog():
         dlg = ft.AlertDialog(
             content=ft.Container(
                 content=ft.Video(
-                    media=ft.VideoMedia("taylor_wink.mp4"),
+                    src="taylor_wink.mp4",   # ← Corregido
                     autoplay=True,
                     expand=True,
+                    show_controls=False,
                 ),
                 width=300,
                 height=300,
@@ -67,7 +65,7 @@ def main(page: ft.Page):
         )
         return dlg
 
-    # 3. Función para determinar el "Lyrics Mood"
+    # Lyrics Mood
     def get_lyrics_mood(days_left):
         if days_left > 7:
             return "Life is a classroom... (Chill) 🌸"
@@ -78,7 +76,7 @@ def main(page: ft.Page):
         else:
             return "BABY, LET THE GAMES BEGIN! (PANIC) 🐍"
 
-    # 4. Gráfico de Carga de Trabajo
+    # Chart
     chart_row = ft.Row(
         alignment=ft.MainAxisAlignment.SPACE_EVENLY,
         height=100,
@@ -112,7 +110,7 @@ def main(page: ft.Page):
                 )
             )
 
-    # 5. Lista de Tareas y almacenamiento de datos
+    # Tasks
     task_list = ft.Column(spacing=15)
     tasks_data = []
 
@@ -129,12 +127,9 @@ def main(page: ft.Page):
 
         selected_era = era_dropdown.value
         era_data = eras_config[selected_era]
-        deadline = datetime.datetime.strptime(
-            str(date_picker.value).split(" ")[0], "%Y-%m-%d"
-        )
+        deadline = datetime.datetime.strptime(str(date_picker.value).split(" ")[0], "%Y-%m-%d")
         now = datetime.datetime.now()
-        delta = deadline - now
-        days_left = delta.days
+        days_left = (deadline - now).days
         lyrics_mood = get_lyrics_mood(days_left)
         progress_value = max(0.0, min(1.0, 1 - (days_left / 14)))
 
@@ -154,27 +149,14 @@ def main(page: ft.Page):
 
         task_name_val = task_name.value
         new_task = ft.Container(
-            content=ft.Column(
-                [
-                    ft.Row(
-                        [
-                            ft.Checkbox(on_change=mark_as_done, fill_color=era_data["color"]),
-                            ft.Text(task_name_val, weight="bold", size=18, color="white"),
-                        ]
-                    ),
-                    ft.Text(
-                        f"Deadline: {deadline.strftime('%b %d, %Y')} | {days_left} days left",
-                        size=12,
-                        color="white70",
-                    ),
-                    ft.ProgressBar(
-                        value=progress_value,
-                        color=era_data["color"],
-                        bgcolor="black26",
-                    ),
-                    ft.Text(f"Mood: {lyrics_mood}", size=11, italic=True, color="white"),
-                ]
-            ),
+            content=ft.Column([
+                ft.Row([ft.Checkbox(on_change=mark_as_done, fill_color=era_data["color"]),
+                        ft.Text(task_name_val, weight="bold", size=18, color="white")]),
+                ft.Text(f"Deadline: {deadline.strftime('%b %d, %Y')} | {days_left} days left",
+                        size=12, color="white70"),
+                ft.ProgressBar(value=progress_value, color=era_data["color"], bgcolor="black26"),
+                ft.Text(f"Mood: {lyrics_mood}", size=11, italic=True, color="white"),
+            ]),
             padding=15,
             border_radius=15,
             gradient=ft.LinearGradient(
@@ -182,7 +164,6 @@ def main(page: ft.Page):
                 end=ft.alignment.bottom_right,
                 colors=era_data["bg_grad"],
             ),
-            animate=ft.animation.Animation(300, "easeIn"),
         )
 
         new_task_ref[0] = new_task
@@ -195,19 +176,13 @@ def main(page: ft.Page):
         update_chart()
         page.update()
 
-    # ------------------ INTERFAZ DE ENTRADA ------------------
-    header = ft.Text(
-        "My Academic Eras", size=32, weight="bold", italic=True, color="#C0C0C0"
-    )
+    # UI Elements
+    header = ft.Text("My Academic Eras", size=32, weight="bold", italic=True, color="#C0C0C0")
 
     task_name = ft.TextField(label="Assignment Name", border_color="grey")
     era_dropdown = ft.Dropdown(
         label="Select Era (Difficulty)",
-        options=[
-            ft.dropdown.Option("Lover"),
-            ft.dropdown.Option("Red"),
-            ft.dropdown.Option("Reputation"),
-        ],
+        options=[ft.dropdown.Option("Lover"), ft.dropdown.Option("Red"), ft.dropdown.Option("Reputation")],
         value="Lover",
         border_color="grey",
     )
@@ -221,16 +196,13 @@ def main(page: ft.Page):
     page.overlay.append(date_picker)
 
     date_btn = ft.ElevatedButton(
-        "Pick Deadline",
-        icon=ft.icons.CALENDAR_MONTH,
-        on_click=lambda e: date_picker.pick_date(),
+        "Pick Deadline", icon=ft.icons.CALENDAR_MONTH,
+        on_click=lambda e: date_picker.pick_date()
     )
 
-    add_btn = ft.ElevatedButton(
-        "Add Assignment", bgcolor="#C0C0C0", color="black", on_click=add_task
-    )
+    add_btn = ft.ElevatedButton("Add Assignment", bgcolor="#C0C0C0", color="black", on_click=add_task)
 
-    # ------------------ RENDERIZAR TODO ------------------
+    # Render
     update_chart()
 
     page.add(
@@ -248,48 +220,35 @@ def main(page: ft.Page):
     )
 
 
-# ====================== MANEJADOR DE ERRORES (IMPORTANTE) ======================
+# ====================== ERROR HANDLER ======================
 def global_error_handler(e):
-    try:
-        error_text = f"Error:\n{str(e)}\n\n{traceback.format_exc(limit=15)}"
-        
-        error_page = ft.Page()
-        error_page.title = "Error - The Tortured Poets Department"
-        error_page.bgcolor = ft.Colors.RED_900
-        error_page.vertical_alignment = ft.MainAxisAlignment.CENTER
-        error_page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-        error_page.padding = 30
+    error_text = f"Error:\n{str(e)}\n\n{traceback.format_exc(limit=12)}"
+    
+    error_page = ft.Page()
+    error_page.title = "Error"
+    error_page.bgcolor = ft.Colors.RED_900
+    error_page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    error_page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    error_page.padding = 30
 
-        error_page.add(
-            ft.Column(
-                [
-                    ft.Icon(ft.Icons.ERROR_OUTLINE_ROUNDED, color=ft.Colors.WHITE, size=90),
-                    ft.Text("¡La app se cayó al iniciar!", 
-                           size=24, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD, text_align="center"),
-                    ft.Container(
-                        content=ft.Text(error_text, color=ft.Colors.WHITE70, size=13),
-                        bgcolor=ft.Colors.BLACK26,
-                        padding=15,
-                        border_radius=10,
-                        width=380,
-                    ),
-                    ft.ElevatedButton(
-                        "Cerrar App", 
-                        bgcolor=ft.Colors.WHITE,
-                        color=ft.Colors.RED_900,
-                        on_click=lambda _: sys.exit(0)
-                    )
-                ],
-                spacing=20,
-                alignment=ft.MainAxisAlignment.CENTER,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER
-            )
-        )
-        ft.app(target=lambda p: error_page)
-    except:
-        sys.exit(1)  # Si falla hasta el error handler, cierra
+    error_page.add(
+        ft.Column([
+            ft.Icon(ft.Icons.ERROR_OUTLINE_ROUNDED, color=ft.Colors.WHITE, size=90),
+            ft.Text("¡La app falló al iniciar!", size=24, color=ft.Colors.WHITE, weight="bold"),
+            ft.Container(
+                content=ft.Text(error_text, color=ft.Colors.WHITE70, size=13),
+                bgcolor=ft.Colors.BLACK26,
+                padding=15,
+                border_radius=10,
+            ),
+            ft.ElevatedButton("Cerrar", bgcolor=ft.Colors.WHITE, color=ft.Colors.RED_900,
+                              on_click=lambda _: sys.exit(0))
+        ], spacing=20, alignment=ft.MainAxisAlignment.CENTER)
+    )
+    
+    ft.app(target=lambda p: error_page)
 
-# ====================== EJECUCIÓN ======================
+# ====================== INICIO ======================
 if __name__ == "__main__":
     try:
         ft.app(target=main, assets_dir="assets")
