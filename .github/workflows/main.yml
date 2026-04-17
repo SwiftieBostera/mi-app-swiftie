@@ -35,4 +35,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: swiftie-app-apk
-          path: build/flutter/outputs/flutter-apk/app-release.apk
+          # Esto le dice: "Busca en toda la carpeta build cualquier archivo que termine en .apk"
+          path: build/**/*.apk
+          if-no-files-found: error # Esto nos avisará si de verdad no hay nada
