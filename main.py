@@ -1,6 +1,8 @@
 import flet as ft
 import datetime
 import random
+import traceback
+import sys
 
 def main(page: ft.Page):
     # Configuración principal de la página
@@ -13,10 +15,9 @@ def main(page: ft.Page):
     page.window_height = 800
 
     # ------------------ DATOS Y LÓGICA ------------------
-
     eras_config = {
-        "Lover":      {"color": "#FFB6C1", "bg_grad": ["#ffe6ea", "#ffb6c1"], "diff": "Easy"},
-        "Red":        {"color": "#8B0000", "bg_grad": ["#ff4d4d", "#8b0000"], "diff": "Moderate"},
+        "Lover": {"color": "#FFB6C1", "bg_grad": ["#ffe6ea", "#ffb6c1"], "diff": "Easy"},
+        "Red": {"color": "#8B0000", "bg_grad": ["#ff4d4d", "#8b0000"], "diff": "Moderate"},
         "Reputation": {"color": "#C0C0C0", "bg_grad": ["#4a4a4a", "#000000"], "diff": "Hard"},
     }
 
@@ -29,7 +30,6 @@ def main(page: ft.Page):
     ]
 
     # ------------------ COMPONENTES UI ------------------
-
     # 1. Panic Button
     def panic_action(e):
         lyric = random.choice(panic_lyrics)
@@ -50,10 +50,6 @@ def main(page: ft.Page):
     page.floating_action_button = panic_btn
 
     # 2. Video Celebration Dialog
-    # FIX: el dialog se crea dentro de mark_as_done para evitar
-    # comportamiento raro al reutilizar una única instancia global.
-    # Asegúrate de tener 'taylor_wink.mp4' en la carpeta 'assets'
-    # y de tener instalado: pip install flet-video
     def make_video_dialog():
         dlg = ft.AlertDialog(
             content=ft.Container(
@@ -89,21 +85,15 @@ def main(page: ft.Page):
         cross_alignment=ft.CrossAxisAlignment.END,
     )
 
-    # FIX: update_chart ahora recibe la lista de tareas para calcular
-    # carga real por día. Si no hay tareas aún, muestra barras vacías.
     def update_chart():
         chart_row.controls.clear()
         days_label = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        # Contamos cuántas tareas vencen cada día de la semana
         day_counts = [0] * 7
         for task_data in tasks_data:
-            weekday = task_data["deadline"].weekday()  # 0=Mon … 6=Sun
+            weekday = task_data["deadline"].weekday()
             day_counts[weekday] += 1
-
         max_count = max(day_counts) if any(day_counts) else 1
-
         for i, day in enumerate(days_label):
-            # Altura proporcional a la cantidad de tareas (mín 8px, máx 90px)
             load_height = max(8, int((day_counts[i] / max_count) * 90))
             chart_row.controls.append(
                 ft.Column(
@@ -124,10 +114,9 @@ def main(page: ft.Page):
 
     # 5. Lista de Tareas y almacenamiento de datos
     task_list = ft.Column(spacing=15)
-    tasks_data = []  # guarda metadatos para el chart
+    tasks_data = []
 
     def add_task(e):
-        # FIX: validación completa incluyendo era_dropdown
         if not task_name.value or not date_picker.value or not era_dropdown.value:
             page.snack_bar = ft.SnackBar(
                 content=ft.Text("⚠️ Please fill in all fields.", color="white"),
@@ -140,38 +129,30 @@ def main(page: ft.Page):
 
         selected_era = era_dropdown.value
         era_data = eras_config[selected_era]
-
         deadline = datetime.datetime.strptime(
             str(date_picker.value).split(" ")[0], "%Y-%m-%d"
         )
         now = datetime.datetime.now()
         delta = deadline - now
         days_left = delta.days
-
         lyrics_mood = get_lyrics_mood(days_left)
-
-        # FIX: ProgressBar con clamp para evitar valores fuera de [0, 1]
         progress_value = max(0.0, min(1.0, 1 - (days_left / 14)))
 
-        # FIX: new_task definida antes del closure de mark_as_done
-        # para poder referenciarla directamente (evita el frágil .parent chain)
-        new_task_ref = [None]  # lista para permitir referencia mutable en closure
+        new_task_ref = [None]
 
         def mark_as_done(e):
-            # Crear un dialog nuevo cada vez para evitar problemas con el video
             video_dialog = make_video_dialog()
             page.dialog = video_dialog
             video_dialog.open = True
-            # FIX: referencia directa al container, no .parent.parent.parent
+
             if new_task_ref[0] in task_list.controls:
                 task_list.controls.remove(new_task_ref[0])
-            # Eliminar de tasks_data
+
             tasks_data[:] = [t for t in tasks_data if t["deadline"] != deadline or t["name"] != task_name_val]
             update_chart()
             page.update()
 
-        task_name_val = task_name.value  # capturamos el valor antes de limpiar
-
+        task_name_val = task_name.value
         new_task = ft.Container(
             content=ft.Column(
                 [
@@ -204,28 +185,22 @@ def main(page: ft.Page):
             animate=ft.animation.Animation(300, "easeIn"),
         )
 
-        new_task_ref[0] = new_task  # asignamos la referencia al closure
-
+        new_task_ref[0] = new_task
         task_list.controls.append(new_task)
         tasks_data.append({"name": task_name_val, "deadline": deadline})
 
-        # Limpiar campos
         task_name.value = ""
         date_picker.value = None
-        # FIX: actualizamos el texto del botón de fecha
         date_btn.text = "Pick Deadline"
-
         update_chart()
         page.update()
 
     # ------------------ INTERFAZ DE ENTRADA ------------------
-
     header = ft.Text(
         "My Academic Eras", size=32, weight="bold", italic=True, color="#C0C0C0"
     )
 
     task_name = ft.TextField(label="Assignment Name", border_color="grey")
-
     era_dropdown = ft.Dropdown(
         label="Select Era (Difficulty)",
         options=[
@@ -237,7 +212,6 @@ def main(page: ft.Page):
         border_color="grey",
     )
 
-    # FIX: on_change muestra la fecha seleccionada en el botón
     def on_date_change(e):
         if date_picker.value:
             date_btn.text = date_picker.value.strftime("%b %d, %Y")
@@ -257,7 +231,7 @@ def main(page: ft.Page):
     )
 
     # ------------------ RENDERIZAR TODO ------------------
-    update_chart()  # Inicializar gráfico vacío
+    update_chart()
 
     page.add(
         header,
@@ -274,4 +248,50 @@ def main(page: ft.Page):
     )
 
 
-ft.app(target=main, assets_dir="assets")
+# ====================== MANEJADOR DE ERRORES (IMPORTANTE) ======================
+def global_error_handler(e):
+    try:
+        error_text = f"Error:\n{str(e)}\n\n{traceback.format_exc(limit=15)}"
+        
+        error_page = ft.Page()
+        error_page.title = "Error - The Tortured Poets Department"
+        error_page.bgcolor = ft.Colors.RED_900
+        error_page.vertical_alignment = ft.MainAxisAlignment.CENTER
+        error_page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        error_page.padding = 30
+
+        error_page.add(
+            ft.Column(
+                [
+                    ft.Icon(ft.Icons.ERROR_OUTLINE_ROUNDED, color=ft.Colors.WHITE, size=90),
+                    ft.Text("¡La app se cayó al iniciar!", 
+                           size=24, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD, text_align="center"),
+                    ft.Container(
+                        content=ft.Text(error_text, color=ft.Colors.WHITE70, size=13),
+                        bgcolor=ft.Colors.BLACK26,
+                        padding=15,
+                        border_radius=10,
+                        width=380,
+                    ),
+                    ft.ElevatedButton(
+                        "Cerrar App", 
+                        bgcolor=ft.Colors.WHITE,
+                        color=ft.Colors.RED_900,
+                        on_click=lambda _: sys.exit(0)
+                    )
+                ],
+                spacing=20,
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER
+            )
+        )
+        ft.app(target=lambda p: error_page)
+    except:
+        sys.exit(1)  # Si falla hasta el error handler, cierra
+
+# ====================== EJECUCIÓN ======================
+if __name__ == "__main__":
+    try:
+        ft.app(target=main, assets_dir="assets")
+    except Exception as ex:
+        global_error_handler(ex)
